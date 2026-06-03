@@ -1,0 +1,6 @@
+{
+  "name": "Assistente de Barbearia",
+  "description": "Assistente virtual interactiva para agendamentos de barbearia com sincronização de agenda em tempo real.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
