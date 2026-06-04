@@ -1,6 +1,6 @@
 /** Viewport que impede zoom no iOS ao focar inputs (Safari ignora se mudar só depois do React). */
 export const VIEWPORT_NO_ZOOM =
-  'width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=overlays-content';
+  'width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content';
 
 const VIEWPORT_DEFAULT = 'width=device-width, initial-scale=1, viewport-fit=cover';
 

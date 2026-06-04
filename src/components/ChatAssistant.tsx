@@ -28,7 +28,7 @@ import {
   cancellationToChatMessage
 } from '../cancellationReceipts';
 import { normalizeEmail, isValidEmail, getCurrentUser, setCurrentUserId, createUser, verifyLogin, logoutUser, requestPasswordResetLocal, resetPasswordLocal } from '../userMemory';
-import { primeInputNoZoom } from '../lib/assistantViewport';
+import MobileChatInput from './MobileChatInput';
 
 interface ChatAssistantProps {
   useApi?: boolean;
@@ -108,11 +108,8 @@ export default function ChatAssistant({
   const [foundCancelAppointments, setFoundCancelAppointments] = useState<Appointment[]>([]);
   const [pendingCancelAppointment, setPendingCancelAppointment] = useState<Appointment | null>(null);
   const [rescheduleTarget, setRescheduleTarget] = useState<Appointment | null>(null);
-  /** Fallback iOS quando o teclado não altera visualViewport */
-  const [focusKeyboardBump, setFocusKeyboardBump] = useState(0);
-
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const dockHeightPx = currentUser ? 152 : 96;
 
   const scrollChatToEnd = () => {
     requestAnimationFrame(() => {
@@ -133,15 +130,9 @@ export default function ChatAssistant({
     scrollToBottom();
   }, [messages, isTyping]);
 
-  const effectiveKeyboardInset = Math.max(keyboardInset, focusKeyboardBump);
-
   useEffect(() => {
-    if (keyboardInset > 80) setFocusKeyboardBump(0);
+    if (keyboardInset > 0) scrollChatToEnd();
   }, [keyboardInset]);
-
-  useEffect(() => {
-    if (effectiveKeyboardInset > 0) scrollChatToEnd();
-  }, [effectiveKeyboardInset]);
 
   useEffect(() => {
     if (bootstrapped || messages.length > 0) return;
@@ -1478,8 +1469,13 @@ export default function ChatAssistant({
         </div>
       </div>
 
-      {/* Message area */}
-      <div className="chat-messages-bg flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5 space-y-4 scroll-smooth">
+      {/* Message area — padding inferior reserva espaço da barra fixa no celular */}
+      <div
+        className="chat-messages-bg flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5 space-y-4 scroll-smooth max-sm:pb-2"
+        style={{
+          paddingBottom: `calc(${dockHeightPx}px + ${keyboardInset}px + env(safe-area-inset-bottom, 0px))`
+        }}
+      >
         <AnimatePresence initial={false}>
           {messages.map(msg => {
             const isAss = msg.sender === 'assistant';
@@ -1560,11 +1556,12 @@ export default function ChatAssistant({
         <div ref={chatEndRef} />
       </div>
 
-      {/* Input panel — sobe com o teclado sem dar zoom na página */}
+      {/* Barra de digitação fixa no celular (evita zoom/reflow do Safari) */}
       <div
-        className="px-4 py-3 bg-zinc-950/98 sm:bg-zinc-900/95 backdrop-blur-md border-t border-zinc-800/50 shrink-0 transition-[padding] duration-150"
+        className="max-sm:fixed max-sm:left-0 max-sm:right-0 max-sm:z-[200] px-4 py-3 bg-zinc-950/98 sm:bg-zinc-900/95 backdrop-blur-md border-t border-zinc-800/50 shrink-0 sm:relative transition-[bottom] duration-100"
         style={{
-          paddingBottom: `max(0.875rem, env(safe-area-inset-bottom), ${effectiveKeyboardInset}px)`
+          bottom: keyboardInset,
+          paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))'
         }}
       >
         {currentUser && (
@@ -1590,55 +1587,19 @@ export default function ChatAssistant({
             </button>
           </div>
         )}
-        <form
-          id="chat-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSend();
+        <MobileChatInput
+          value={inputText}
+          onChange={setInputText}
+          onSubmit={() => handleSend()}
+          placeholder={
+            currentStep === 'CANCEL_PIX_KEY' ? 'Sua chave PIX...' : 'Mensagem...'
+          }
+          onFocus={() => {
+            window.scrollTo(0, 0);
+            scrollChatToEnd();
+            setTimeout(scrollChatToEnd, 300);
           }}
-          className="flex gap-2.5 items-end"
-        >
-          <input
-            ref={inputRef}
-            id="chat-msg-input"
-            type="text"
-            inputMode="text"
-            enterKeyHint="send"
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="sentences"
-            spellCheck={false}
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onTouchStart={(e) => primeInputNoZoom(e.currentTarget)}
-            onFocus={() => {
-              window.scrollTo(0, 0);
-              document.documentElement.scrollTop = 0;
-              document.body.scrollTop = 0;
-              scrollChatToEnd();
-              const estimate = Math.round(Math.min(340, window.innerHeight * 0.42));
-              setTimeout(() => {
-                if (keyboardInset < 80) setFocusKeyboardBump(estimate);
-                scrollChatToEnd();
-              }, 400);
-            }}
-            onBlur={() => setFocusKeyboardBump(0)}
-            placeholder={
-              currentStep === 'CANCEL_PIX_KEY'
-                ? 'Sua chave PIX...'
-                : 'Mensagem...'
-            }
-            className="chat-msg-input flex-1 min-h-[48px] px-4 py-3 bg-zinc-900 border border-zinc-700/80 focus:border-amber-500/80 focus:ring-2 focus:ring-amber-500/20 rounded-2xl placeholder:text-zinc-500 text-white outline-none transition-colors touch-manipulation"
-          />
-
-          <button
-            id="chat-send-btn"
-            type="submit"
-            className="w-11 h-11 min-h-[44px] bg-gradient-to-br from-amber-400 to-amber-600 hover:from-amber-300 hover:to-amber-500 active:scale-95 flex items-center justify-center text-zinc-950 rounded-2xl transition-all shrink-0 cursor-pointer shadow-lg shadow-amber-500/20 touch-manipulation"
-          >
-            <Send className="w-5 h-5" />
-          </button>
-        </form>
+        />
 
         <p className="hidden sm:block text-[10px] text-slate-500 text-center mt-2 font-mono">
           © {config.name} • Agendamentos Rápidos com Sincronização Inteligente
