@@ -11,6 +11,15 @@ const PORT = Number(process.env.PORT) || 3001;
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
+app.get('/', (_req, res) => {
+  res.json({
+    name: 'Barbearia SaaS API',
+    ok: true,
+    health: '/api/health',
+    hint: 'O app (React) fica na Vercel. Esta URL é só a API.'
+  });
+});
+
 app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
