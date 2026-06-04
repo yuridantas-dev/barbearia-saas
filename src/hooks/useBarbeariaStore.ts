@@ -24,14 +24,20 @@ function loadLocal<T>(baseKey: string, slug: string, fallback: T): T {
   return fallback;
 }
 
-export function useBarbeariaStore(slug: string) {
+type StoreOptions = { admin?: boolean };
+
+export function useBarbeariaStore(slug: string, options?: StoreOptions) {
+  const adminMode = options?.admin ?? false;
+  const forceApi = adminMode && Boolean(import.meta.env.VITE_API_URL);
+
   const staticShop = getShopBySlug(slug);
   if (!staticShop) throw new Error(`Barbearia inválida: ${slug}`);
 
   setActiveShopSlug(slug);
 
-  const [useApi, setUseApi] = useState(false);
+  const [useApi, setUseApi] = useState(forceApi);
   const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState<string | null>(null);
   const [config, setConfig] = useState<BarbeariaConfig>(staticShop.config);
   const [services, setServices] = useState<Service[]>(DEFAULT_SERVICES);
   const [barbers, setBarbers] = useState<Barber[]>(DEFAULT_BARBERS);
@@ -77,16 +83,23 @@ export function useBarbeariaStore(slug: string) {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const apiOk = await checkApiHealth();
+      setApiError(null);
+      const apiOk = forceApi || (await checkApiHealth());
       if (cancelled) return;
-      setUseApi(apiOk);
+      setUseApi(apiOk || forceApi);
       try {
-        if (apiOk) await loadFromApi();
+        if (apiOk || forceApi) await loadFromApi();
         else loadLocalData();
       } catch (e) {
-        console.warn('[store] API falhou, usando localStorage', e);
-        loadLocalData();
-        setUseApi(false);
+        if (forceApi) {
+          console.warn('[store] API indisponível (modo admin)', e);
+          setApiError('Não foi possível conectar à API. Aguarde e recarregue a página.');
+          setUseApi(true);
+        } else {
+          console.warn('[store] API falhou, usando localStorage', e);
+          loadLocalData();
+          setUseApi(false);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -94,7 +107,29 @@ export function useBarbeariaStore(slug: string) {
     return () => {
       cancelled = true;
     };
-  }, [slug, loadFromApi, loadLocalData]);
+  }, [slug, loadFromApi, loadLocalData, forceApi]);
+
+  useEffect(() => {
+    if (!useApi || loading || !adminMode) return;
+
+    const refresh = () => {
+      loadFromApi().catch(() => {});
+    };
+
+    const intervalId = window.setInterval(refresh, 25000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [useApi, loading, adminMode, loadFromApi]);
 
   useEffect(() => {
     if (useApi || loading) return;
@@ -213,6 +248,7 @@ export function useBarbeariaStore(slug: string) {
     shop: staticShop,
     loading,
     useApi,
+    apiError,
     config,
     setConfig: persistConfig,
     services,

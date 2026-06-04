@@ -1,7 +1,7 @@
 import React from 'react';
-import { Link, useParams, Navigate } from 'react-router-dom';
-import { Scissors, Shield, Sparkles } from 'lucide-react';
-import { getShopBySlug, getAdminUrl } from '../shops';
+import { useParams, Navigate } from 'react-router-dom';
+import { Scissors, Sparkles } from 'lucide-react';
+import { getShopBySlug } from '../shops';
 import { useBarbeariaStore } from '../hooks/useBarbeariaStore';
 import ChatAssistant from '../components/ChatAssistant';
 
@@ -24,13 +24,6 @@ function AssistantView({ slug }: { slug: string }) {
               <p className="text-[10px] text-slate-400 truncate">Assistente Virtual de Agendamentos</p>
             </div>
           </div>
-          <Link
-            to={getAdminUrl(slug)}
-            className="shrink-0 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:text-violet-400 hover:border-violet-500/30 flex items-center gap-1 transition-all"
-            title="Painel administrativo"
-          >
-            <Shield className="w-3.5 h-3.5" /> Admin
-          </Link>
         </div>
       </header>
 

@@ -15,9 +15,11 @@ export function setToken(kind: TokenKind, token: string | null) {
   else localStorage.removeItem(tokenKey(kind));
 }
 
+const HEALTH_TIMEOUT_MS = import.meta.env.VITE_API_URL ? 20000 : 3000;
+
 export async function checkApiHealth(): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(3000) });
+    const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS) });
     const data = await res.json();
     return data.ok && data.database === true;
   } catch {

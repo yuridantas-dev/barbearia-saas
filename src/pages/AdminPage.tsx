@@ -91,25 +91,33 @@ function StaffLogin({ slug, onSuccess }: { slug: string; onSuccess: () => void }
 }
 
 function AdminView({ slug }: { slug: string }) {
-  const store = useBarbeariaStore(slug);
+  const store = useBarbeariaStore(slug, { admin: true });
   const [activeTab, setActiveTab] = useState<'agenda' | 'settings'>('agenda');
   const [staffUser, setStaffUser] = useState<{ name: string; email: string } | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
+  const requiresStaffAuth =
+    store.useApi || Boolean(import.meta.env.VITE_API_URL);
+
   useEffect(() => {
-    if (!store.useApi) {
+    if (!requiresStaffAuth) {
       setAuthChecked(true);
       return;
     }
-    if (getToken('staff') || getToken('platform')) {
-      fetchMe(getToken('platform') ? 'platform' : 'staff').then(u => {
+
+    const staffToken = getToken('staff');
+    const platformToken = getToken('platform');
+
+    if (staffToken || platformToken) {
+      fetchMe(platformToken ? 'platform' : 'staff').then(u => {
         if (u) setStaffUser(u);
         setAuthChecked(true);
       });
     } else {
+      setStaffUser(null);
       setAuthChecked(true);
     }
-  }, [store.useApi]);
+  }, [requiresStaffAuth]);
 
   if (store.loading) {
     return (
@@ -119,7 +127,7 @@ function AdminView({ slug }: { slug: string }) {
     );
   }
 
-  if (store.useApi && authChecked && !staffUser && !getToken('platform')) {
+  if (requiresStaffAuth && authChecked && !staffUser) {
     return <StaffLogin slug={slug} onSuccess={() => window.location.reload()} />;
   }
 
@@ -196,6 +204,11 @@ function AdminView({ slug }: { slug: string }) {
       </header>
 
       <main className="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-5 flex flex-col min-h-0 overflow-hidden">
+        {store.apiError && (
+          <div className="mb-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs">
+            {store.apiError}
+          </div>
+        )}
         {activeTab === 'agenda' ? (
           <div className="flex-1 min-h-[600px] lg:min-h-0">
             <AgendaPanel
