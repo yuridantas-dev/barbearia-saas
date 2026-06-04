@@ -28,12 +28,31 @@ export async function loginCustomer(email: string, pin: string): Promise<AuthUse
 const STAFF_SHOP_SLUG_KEY = 'barber_staff_shop_slug';
 
 export function getStaffShopSlug(): string | null {
-  return sessionStorage.getItem(STAFF_SHOP_SLUG_KEY);
+  const fromLocal = localStorage.getItem(STAFF_SHOP_SLUG_KEY);
+  if (fromLocal) return fromLocal;
+  const legacy = sessionStorage.getItem(STAFF_SHOP_SLUG_KEY);
+  if (legacy) {
+    localStorage.setItem(STAFF_SHOP_SLUG_KEY, legacy);
+    sessionStorage.removeItem(STAFF_SHOP_SLUG_KEY);
+  }
+  return legacy;
 }
 
 function setStaffShopSlug(slug: string | null) {
-  if (slug) sessionStorage.setItem(STAFF_SHOP_SLUG_KEY, slug);
-  else sessionStorage.removeItem(STAFF_SHOP_SLUG_KEY);
+  sessionStorage.removeItem(STAFF_SHOP_SLUG_KEY);
+  if (slug) localStorage.setItem(STAFF_SHOP_SLUG_KEY, slug);
+  else localStorage.removeItem(STAFF_SHOP_SLUG_KEY);
+}
+
+function isAuthError(message: string): boolean {
+  const m = message.toLowerCase();
+  return (
+    m.includes('401') ||
+    m.includes('não autenticado') ||
+    m.includes('token inválido') ||
+    m.includes('expirado') ||
+    m.includes('credenciais')
+  );
 }
 
 export async function loginStaff(
@@ -52,17 +71,40 @@ export async function loginStaff(
 
 /** Só considera logado no admin se entrou nesta barbearia (não usa sessão do painel SaaS). */
 export async function verifyStaffShopAccess(slug: string): Promise<AuthUser | null> {
-  if (getStaffShopSlug() !== slug) return null;
+  const boundSlug = getStaffShopSlug();
+  if (boundSlug !== slug) return null;
 
-  const tokenKind = getToken('staff') ? 'staff' : getToken('platform') ? 'platform' : null;
+  const tokenKind: TokenKind | null = getToken('staff')
+    ? 'staff'
+    : getToken('platform')
+      ? 'platform'
+      : null;
   if (!tokenKind) return null;
 
   try {
-    const data = await apiFetch<AuthUser & { role?: string }>(`/shops/${slug}/staff/session`, {}, tokenKind);
+    const data = await apiFetch<AuthUser & { role?: string }>(
+      `/shops/${slug}/staff/session`,
+      {},
+      tokenKind
+    );
     return { id: data.id, name: data.name, email: data.email };
-  } catch {
-    if (tokenKind === 'staff') setToken('staff', null);
-    setStaffShopSlug(null);
+  } catch (e) {
+    const message = (e as Error).message || '';
+
+    if (isAuthError(message)) {
+      if (tokenKind === 'staff') setToken('staff', null);
+      setStaffShopSlug(null);
+      return null;
+    }
+
+    // API lenta/indisponível ou rota antiga: confia no token se /auth/me ainda responde
+    try {
+      const me = await fetchMe(tokenKind);
+      if (me) return me;
+    } catch {
+      /* ignore */
+    }
+
     return null;
   }
 }

@@ -10,7 +10,13 @@ import { FullLinkDisplay } from '../components/CopyLinkButton';
 import AgendaPanel from '../components/AgendaPanel';
 import SettingsPanel from '../components/SettingsPanel';
 
-function StaffLogin({ slug, onSuccess }: { slug: string; onSuccess: () => void }) {
+function StaffLogin({
+  slug,
+  onSuccess
+}: {
+  slug: string;
+  onSuccess: (user: { name: string; email: string }) => void;
+}) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -22,8 +28,8 @@ function StaffLogin({ slug, onSuccess }: { slug: string; onSuccess: () => void }
     setError('');
     setLoading(true);
     try {
-      await loginStaff(email, password, slug);
-      onSuccess();
+      const { user } = await loginStaff(email, password, slug);
+      onSuccess(user);
     } catch (err) {
       setError((err as Error).message || 'Credenciais inválidas');
     } finally {
@@ -95,24 +101,33 @@ function AdminView({ slug }: { slug: string }) {
   const store = useBarbeariaStore(slug, { admin: true });
   const [activeTab, setActiveTab] = useState<'agenda' | 'settings' | 'links'>('agenda');
   const [staffUser, setStaffUser] = useState<{ name: string; email: string } | null>(null);
-  const [authChecked, setAuthChecked] = useState(false);
+  const [authState, setAuthState] = useState<'pending' | 'guest' | 'authed'>('pending');
 
   // Com API configurada, admin sempre exige login nesta barbearia (sessão SaaS não vale)
   const requiresStaffAuth = API_BASE !== '/api' || store.useApi;
 
   useEffect(() => {
     if (!requiresStaffAuth) {
-      setAuthChecked(true);
+      setAuthState('guest');
       return;
     }
 
+    let cancelled = false;
     verifyStaffShopAccess(slug).then(u => {
+      if (cancelled) return;
       setStaffUser(u);
-      setAuthChecked(true);
+      setAuthState(u ? 'authed' : 'guest');
     });
+
+    return () => {
+      cancelled = true;
+    };
   }, [requiresStaffAuth, slug]);
 
-  if (store.loading) {
+  const waitingAuth = requiresStaffAuth && authState === 'pending';
+  const waitingData = store.loading;
+
+  if (waitingData || waitingAuth) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center text-zinc-400 text-sm">
         Carregando...
@@ -131,13 +146,22 @@ function AdminView({ slug }: { slug: string }) {
     );
   }
 
-  if (requiresStaffAuth && authChecked && !staffUser) {
-    return <StaffLogin slug={slug} onSuccess={() => window.location.reload()} />;
+  if (requiresStaffAuth && authState === 'guest') {
+    return (
+      <StaffLogin
+        slug={slug}
+        onSuccess={user => {
+          setStaffUser(user);
+          setAuthState('authed');
+        }}
+      />
+    );
   }
 
   const handleLogout = () => {
     logoutStaff();
-    window.location.reload();
+    setStaffUser(null);
+    setAuthState('guest');
   };
 
   return (
