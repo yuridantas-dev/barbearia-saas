@@ -38,6 +38,8 @@ interface ChatAssistantProps {
   onAddAppointment: (appointment: Appointment) => void;
   onUpdateAppointment: (id: string, updates: Partial<Appointment>) => void;
   onCancelAppointment: (id: string, refundPixKey?: string) => void;
+  /** Altura do teclado virtual (px) para manter o campo visível */
+  keyboardInset?: number;
 }
 
 type Step =
@@ -76,7 +78,8 @@ export default function ChatAssistant({
   appointments,
   onAddAppointment,
   onUpdateAppointment,
-  onCancelAppointment
+  onCancelAppointment,
+  keyboardInset = 0
 }: ChatAssistantProps) {
   const apiMode = useApi ?? false;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -104,8 +107,17 @@ export default function ChatAssistant({
   const [foundCancelAppointments, setFoundCancelAppointments] = useState<Appointment[]>([]);
   const [pendingCancelAppointment, setPendingCancelAppointment] = useState<Appointment | null>(null);
   const [rescheduleTarget, setRescheduleTarget] = useState<Appointment | null>(null);
+  /** Fallback iOS quando o teclado não altera visualViewport */
+  const [focusKeyboardBump, setFocusKeyboardBump] = useState(0);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const scrollChatToEnd = () => {
+    requestAnimationFrame(() => {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    });
+  };
 
   const isPaidAntecipado = (apt: Appointment) =>
     apt.paymentType === 'antecipado' &&
@@ -119,6 +131,16 @@ export default function ChatAssistant({
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping]);
+
+  const effectiveKeyboardInset = Math.max(keyboardInset, focusKeyboardBump);
+
+  useEffect(() => {
+    if (keyboardInset > 80) setFocusKeyboardBump(0);
+  }, [keyboardInset]);
+
+  useEffect(() => {
+    if (effectiveKeyboardInset > 0) scrollChatToEnd();
+  }, [effectiveKeyboardInset]);
 
   useEffect(() => {
     if (bootstrapped || messages.length > 0) return;
@@ -1537,8 +1559,13 @@ export default function ChatAssistant({
         <div ref={chatEndRef} />
       </div>
 
-      {/* Input panel */}
-      <div className="px-4 py-3 bg-zinc-950/98 sm:bg-zinc-900/95 backdrop-blur-md border-t border-zinc-800/50 shrink-0 pb-[max(0.875rem,env(safe-area-inset-bottom))]">
+      {/* Input panel — sobe com o teclado sem dar zoom na página */}
+      <div
+        className="px-4 py-3 bg-zinc-950/98 sm:bg-zinc-900/95 backdrop-blur-md border-t border-zinc-800/50 shrink-0 transition-[padding] duration-150"
+        style={{
+          paddingBottom: `max(0.875rem, env(safe-area-inset-bottom), ${effectiveKeyboardInset}px)`
+        }}
+      >
         {currentUser && (
           <div className="flex items-center justify-between gap-2 mb-3 pb-3 border-b border-zinc-800/40">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -1571,18 +1598,32 @@ export default function ChatAssistant({
           className="flex gap-2.5 items-end"
         >
           <input
+            ref={inputRef}
             id="chat-msg-input"
             type="text"
             enterKeyHint="send"
             autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
+            onFocus={() => {
+              window.scrollTo(0, 0);
+              scrollChatToEnd();
+              const estimate = Math.round(Math.min(340, window.innerHeight * 0.42));
+              setTimeout(() => {
+                if (keyboardInset < 80) setFocusKeyboardBump(estimate);
+                scrollChatToEnd();
+              }, 400);
+            }}
+            onBlur={() => setFocusKeyboardBump(0)}
             placeholder={
               currentStep === 'CANCEL_PIX_KEY'
                 ? 'Sua chave PIX...'
                 : 'Mensagem...'
             }
-            className="flex-1 min-h-[44px] px-4 py-3 bg-zinc-900 border border-zinc-700/80 focus:border-amber-500/80 focus:ring-2 focus:ring-amber-500/20 rounded-2xl text-base placeholder:text-zinc-500 text-white outline-none transition-all touch-manipulation"
+            className="flex-1 min-h-[44px] px-4 py-3 bg-zinc-900 border border-zinc-700/80 focus:border-amber-500/80 focus:ring-2 focus:ring-amber-500/20 rounded-2xl placeholder:text-zinc-500 text-white outline-none transition-all touch-manipulation"
+            style={{ fontSize: 16 }}
           />
 
           <button

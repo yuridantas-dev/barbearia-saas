@@ -1,16 +1,13 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { Scissors, Sparkles } from 'lucide-react';
 import { useBarbeariaStore } from '../hooks/useBarbeariaStore';
+import { useAssistantViewport } from '../hooks/useAssistantViewport';
 import ChatAssistant from '../components/ChatAssistant';
 
 function AssistantView({ slug }: { slug: string }) {
   const store = useBarbeariaStore(slug);
-
-  useEffect(() => {
-    document.body.classList.add('assistant-fullscreen');
-    return () => document.body.classList.remove('assistant-fullscreen');
-  }, []);
+  const keyboardInset = useAssistantViewport();
 
   if (store.shopNotFound && !store.loading) {
     return (
@@ -54,6 +51,7 @@ function AssistantView({ slug }: { slug: string }) {
               onAddAppointment={store.handleAddAppointment}
               onUpdateAppointment={store.handleUpdateAppointment}
               onCancelAppointment={store.handleCancelAppointment}
+              keyboardInset={keyboardInset}
             />
           )}
         </div>

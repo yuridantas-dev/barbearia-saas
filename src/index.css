@@ -41,20 +41,36 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Assistente (/b/:slug) — tela cheia no celular, sem scroll da página */
+/* Assistente (/b/:slug) — tela fixa, sem zoom ao focar input */
+html.assistant-fullscreen,
 body.assistant-fullscreen {
   overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
   height: 100dvh;
   height: 100svh;
-  background-image: none;
+  overscroll-behavior: none;
   touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
 }
 
-/* iOS/Android: inputs < 16px disparam zoom ao focar */
+body.assistant-fullscreen {
+  background-image: none;
+}
+
 body.assistant-fullscreen input,
 body.assistant-fullscreen textarea,
 body.assistant-fullscreen select {
-  font-size: 16px;
+  font-size: 16px !important;
+  line-height: 1.4 !important;
+  -webkit-text-size-adjust: 100%;
+}
+
+#chat-msg-input {
+  font-size: 16px !important;
+  transform: scale(1);
+  touch-action: manipulation;
 }
 
 .app-input {
