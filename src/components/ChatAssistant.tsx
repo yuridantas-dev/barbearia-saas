@@ -1416,28 +1416,28 @@ export default function ChatAssistant({
   };
 
   return (
-    <div className="flex flex-col h-full min-h-0 bg-zinc-950 overflow-hidden relative sm:bg-zinc-900/80 sm:rounded-2xl sm:border sm:border-zinc-800/80 sm:shadow-2xl sm:shadow-black/20">
+    <div className="flex flex-col h-full min-h-0 bg-zinc-950 overflow-hidden relative sm:bg-zinc-900/60 sm:rounded-2xl sm:border sm:border-zinc-800/60 sm:shadow-2xl sm:shadow-black/30">
       
       {/* Chat header */}
-      <div className="px-3 py-2.5 sm:px-4 sm:py-3 bg-zinc-950 sm:bg-zinc-900/90 backdrop-blur-sm border-b border-zinc-800/80 flex justify-between items-center shrink-0 pt-[max(0.625rem,env(safe-area-inset-top))]">
-        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500 flex items-center justify-center text-zinc-950 font-bold relative shadow-lg shadow-amber-500/20 shrink-0">
-            <Scissors className="w-4 h-4" />
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-amber-500 border-2 border-zinc-950 sm:border-zinc-900 rounded-full" />
+      <div className="px-4 py-3 sm:px-4 sm:py-3.5 bg-zinc-950/95 sm:bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800/50 flex justify-between items-center shrink-0 pt-[max(0.75rem,env(safe-area-inset-top))]">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-zinc-950 relative shadow-lg shadow-amber-500/25 shrink-0">
+            <Scissors className="w-5 h-5" />
+            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 border-2 border-zinc-950 sm:border-zinc-900 rounded-full ring-2 ring-emerald-400/30" />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <h2 className="font-bold text-sm text-white font-display truncate sm:max-w-none">
+            <div className="flex items-center gap-2 min-w-0">
+              <h2 className="font-bold text-base text-white font-display truncate sm:max-w-none">
                 <span className="sm:hidden">{config.name}</span>
                 <span className="hidden sm:inline">Assistente Virtual</span>
               </h2>
-              <span className="text-[9px] bg-amber-500/10 text-amber-500 px-1 py-0.5 rounded uppercase tracking-wider font-extrabold font-display shrink-0">
-                BarberAI
+              <span className="text-[10px] bg-amber-500/15 text-amber-400 px-1.5 py-0.5 rounded-md uppercase tracking-wider font-bold font-display shrink-0 border border-amber-500/20">
+                IA
               </span>
             </div>
-            <p className="text-[10px] text-slate-400 truncate">
-              <span className="sm:hidden">Assistente · {currentUser ? 'Online' : 'Aguardando login'}</span>
-              <span className="hidden sm:inline">{currentUser ? 'Online' : 'Aguardando login'}</span>
+            <p className="text-xs text-zinc-500 truncate mt-0.5">
+              <span className="sm:hidden">{currentUser ? '● Online' : 'Aguardando login'}</span>
+              <span className="hidden sm:inline">{currentUser ? '● Online' : 'Aguardando login'}</span>
             </p>
           </div>
         </div>
@@ -1456,7 +1456,7 @@ export default function ChatAssistant({
       </div>
 
       {/* Message area */}
-      <div className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-4 space-y-4">
+      <div className="chat-messages-bg flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5 space-y-4 scroll-smooth">
         <AnimatePresence initial={false}>
           {messages.map(msg => {
             const isAss = msg.sender === 'assistant';
@@ -1469,17 +1469,17 @@ export default function ChatAssistant({
                 className={`flex gap-2.5 ${isAss ? 'justify-start' : 'justify-end'}`}
               >
                 {isAss && (
-                  <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-display font-semibold text-xs text-amber-500 shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700/80 flex items-center justify-center font-display font-semibold text-sm text-amber-400 shrink-0 shadow-sm">
                     A
                   </div>
                 )}
                 
-                <div className="max-w-[85%] space-y-1">
+                <div className="max-w-[88%] sm:max-w-[85%] space-y-1.5">
                   {/* Bubble body */}
-                  <div className={`p-3 rounded-2xl text-xs leading-relaxed font-sans shadow-md ${
+                  <div className={`p-3.5 sm:p-3 rounded-2xl text-sm leading-relaxed font-sans shadow-lg ${
                     isAss
-                      ? 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none'
-                      : 'bg-amber-500 text-slate-950 font-medium rounded-tr-none'
+                      ? 'bg-zinc-900/90 border border-zinc-800/80 text-zinc-100 rounded-tl-sm backdrop-blur-sm'
+                      : 'bg-gradient-to-br from-amber-400 to-amber-600 text-zinc-950 font-medium rounded-tr-sm shadow-amber-500/15'
                   }`}>
                     <p className="whitespace-pre-line">{msg.text}</p>
                     {renderSpecialWidget(msg)}
@@ -1493,7 +1493,7 @@ export default function ChatAssistant({
                           key={oIdx}
                           id={`chat-opt-btn-${oIdx}`}
                           onClick={() => handleSend(opt.label, opt.value)}
-                          className="py-1.5 px-3 bg-zinc-800/60 hover:bg-amber-500/10 border border-zinc-800 hover:border-amber-500/40 rounded-full text-[11px] font-medium text-amber-500 hover:text-zinc-100 transition-all scale-100 active:scale-95 cursor-pointer"
+                          className="py-2.5 px-4 bg-zinc-900/80 hover:bg-amber-500/15 border border-zinc-700/80 hover:border-amber-500/50 rounded-2xl text-sm font-medium text-amber-400 hover:text-white transition-all active:scale-[0.98] cursor-pointer touch-manipulation"
                         >
                           {opt.label}
                         </button>
@@ -1501,14 +1501,14 @@ export default function ChatAssistant({
                     </div>
                   )}
 
-                  <span className={`text-[10px] text-slate-500 block ${!isAss ? 'text-right' : 'text-left'}`}>
+                  <span className={`text-[11px] text-zinc-600 block ${!isAss ? 'text-right' : 'text-left'}`}>
                     {msg.timestamp}
                   </span>
                 </div>
 
                 {!isAss && (
-                  <div className="w-7 h-7 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center font-display font-semibold text-xs text-amber-500 shrink-0">
-                    <User className="w-3.5 h-3.5" />
+                  <div className="w-8 h-8 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                    <User className="w-4 h-4" />
                   </div>
                 )}
               </motion.div>
@@ -1538,26 +1538,26 @@ export default function ChatAssistant({
       </div>
 
       {/* Input panel */}
-      <div className="p-3 bg-zinc-950 sm:bg-zinc-900/90 backdrop-blur-sm border-t border-zinc-800/80 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="px-4 py-3 bg-zinc-950/98 sm:bg-zinc-900/95 backdrop-blur-md border-t border-zinc-800/50 shrink-0 pb-[max(0.875rem,env(safe-area-inset-bottom))]">
         {currentUser && (
-          <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-zinc-800/60">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/25 flex items-center justify-center shrink-0 font-display font-bold text-xs text-amber-500">
+          <div className="flex items-center justify-between gap-2 mb-3 pb-3 border-b border-zinc-800/40">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/25 flex items-center justify-center shrink-0 font-display font-bold text-sm text-amber-400">
                 {currentUser.name.charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-white truncate">{currentUser.name}</p>
-                <p className="text-[10px] text-zinc-500 truncate">{currentUser.email}</p>
+                <p className="text-sm font-semibold text-white truncate">{currentUser.name}</p>
+                <p className="text-xs text-zinc-500 truncate">{currentUser.email}</p>
               </div>
             </div>
             <button
               id="chat-logout-btn"
               type="button"
               onClick={handleLogout}
-              className="text-[10px] font-semibold text-red-400 hover:text-white bg-red-500/10 hover:bg-red-500 px-2.5 py-2 rounded-xl border border-red-500/40 hover:border-red-500 transition-all flex items-center gap-1.5 shrink-0 shadow-sm shadow-red-500/10 hover:shadow-red-500/25 active:scale-95"
+              className="text-xs font-semibold text-red-400 hover:text-white bg-red-500/10 hover:bg-red-500/90 px-3 py-2 rounded-xl border border-red-500/30 transition-all flex items-center gap-1.5 shrink-0 active:scale-95 touch-manipulation"
               title="Sair da conta"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <LogOut className="w-4 h-4" />
               <span>Sair</span>
             </button>
           </div>
@@ -1568,27 +1568,29 @@ export default function ChatAssistant({
             e.preventDefault();
             handleSend();
           }}
-          className="flex gap-2 items-center"
+          className="flex gap-2.5 items-end"
         >
           <input
             id="chat-msg-input"
             type="text"
+            enterKeyHint="send"
+            autoComplete="off"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             placeholder={
               currentStep === 'CANCEL_PIX_KEY'
-                ? 'Sua chave PIX (CPF, e-mail, telefone...)'
-                : 'Digite sua resposta aqui ou use as opções...'
+                ? 'Sua chave PIX...'
+                : 'Mensagem...'
             }
-            className="flex-1 px-3.5 py-2.5 bg-slate-950/70 border border-slate-800 hover:border-slate-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 rounded-xl text-xs placeholder:text-slate-500 text-white outline-none transition-all"
+            className="flex-1 min-h-[44px] px-4 py-3 bg-zinc-900 border border-zinc-700/80 focus:border-amber-500/80 focus:ring-2 focus:ring-amber-500/20 rounded-2xl text-base placeholder:text-zinc-500 text-white outline-none transition-all touch-manipulation"
           />
 
           <button
             id="chat-send-btn"
             type="submit"
-            className="w-10 h-10 bg-amber-500 hover:bg-amber-600 active:scale-95 flex items-center justify-center text-slate-950 rounded-xl transition-all shrink-0 cursor-pointer shadow-lg shadow-amber-500/10"
+            className="w-11 h-11 min-h-[44px] bg-gradient-to-br from-amber-400 to-amber-600 hover:from-amber-300 hover:to-amber-500 active:scale-95 flex items-center justify-center text-zinc-950 rounded-2xl transition-all shrink-0 cursor-pointer shadow-lg shadow-amber-500/20 touch-manipulation"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-5 h-5" />
           </button>
         </form>
 

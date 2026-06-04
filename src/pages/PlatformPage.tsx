@@ -131,7 +131,7 @@ export default function PlatformPage() {
   if (!authed) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
-        <div className="w-full max-w-md p-6 bg-zinc-900 border border-zinc-800 rounded-2xl space-y-4">
+        <div className="w-full max-w-md p-6 sm:p-8 bg-zinc-900/90 border border-zinc-800/80 rounded-2xl shadow-2xl shadow-black/40 space-y-4 backdrop-blur-sm">
           <Shield className="w-10 h-10 text-violet-400 mx-auto" />
           <div className="text-center space-y-1">
             <h1 className="text-lg font-semibold text-white font-display">
@@ -162,7 +162,8 @@ export default function PlatformPage() {
                 placeholder="E-mail"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-white"
+                className="app-input focus:border-violet-500"
+                autoComplete="email"
                 required
               />
               <input
@@ -170,7 +171,8 @@ export default function PlatformPage() {
                 placeholder="Senha"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-white"
+                className="app-input focus:border-violet-500"
+                autoComplete="current-password"
                 required
               />
               {error && <p className="text-xs text-red-400">{error}</p>}
@@ -180,7 +182,7 @@ export default function PlatformPage() {
               <p className="text-[10px] text-zinc-600 leading-relaxed">
                 Acesso exclusivo do dono da plataforma SaaS. Se você é dono de barbearia, use o link /admin/slug enviado pelo administrador.
               </p>
-              <button type="submit" className="w-full py-2.5 bg-violet-600 text-white rounded-xl font-semibold text-sm">
+              <button type="submit" className="w-full py-3 bg-gradient-to-r from-violet-600 to-violet-500 text-white rounded-xl font-semibold text-base active:scale-[0.98] transition-transform">
                 Entrar no painel SaaS
               </button>
               <button

@@ -39,7 +39,7 @@ function StaffLogin({
 
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-md p-6 bg-zinc-900/80 border border-zinc-800 rounded-2xl space-y-4">
+      <div className="w-full max-w-md p-6 sm:p-8 bg-zinc-900/90 border border-zinc-800/80 rounded-2xl shadow-2xl shadow-black/40 space-y-4 backdrop-blur-sm">
         <div className="text-center space-y-2">
           <Shield className="w-10 h-10 text-violet-400 mx-auto" />
           <h1 className="text-lg font-semibold font-display text-white">
@@ -61,7 +61,8 @@ function StaffLogin({
           placeholder="E-mail"
           value={email}
           onChange={e => setEmail(e.target.value)}
-          className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-white outline-none focus:border-violet-500"
+          className="app-input focus:border-violet-500 focus:ring-violet-500/15"
+          autoComplete="email"
           required
         />
         <input
@@ -69,14 +70,15 @@ function StaffLogin({
           placeholder="Senha"
           value={password}
           onChange={e => setPassword(e.target.value)}
-          className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-white outline-none focus:border-violet-500"
+          className="app-input focus:border-violet-500 focus:ring-violet-500/15"
+          autoComplete="current-password"
           required
         />
         {error && <p className="text-xs text-red-400">{error}</p>}
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2.5 bg-violet-600 hover:bg-violet-500 text-white font-semibold rounded-xl text-sm transition-all disabled:opacity-50"
+          className="w-full py-3 bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-500 hover:to-violet-400 text-white font-semibold rounded-xl text-base transition-all disabled:opacity-50 active:scale-[0.98]"
         >
           {loading ? 'Entrando...' : 'Entrar'}
         </button>

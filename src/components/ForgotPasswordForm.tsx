@@ -95,7 +95,7 @@ export default function ForgotPasswordForm({
           placeholder="Código de 6 dígitos"
           value={code}
           onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-          className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-white outline-none focus:border-violet-500"
+          className="app-input focus:border-violet-500"
           required
         />
         <input
@@ -106,7 +106,7 @@ export default function ForgotPasswordForm({
           onChange={e =>
             setPassword(pinMode ? e.target.value.replace(/\D/g, '').slice(0, 4) : e.target.value)
           }
-          className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-white outline-none focus:border-violet-500"
+          className="app-input focus:border-violet-500"
           required
         />
         <input
@@ -117,7 +117,7 @@ export default function ForgotPasswordForm({
           onChange={e =>
             setConfirm(pinMode ? e.target.value.replace(/\D/g, '').slice(0, 4) : e.target.value)
           }
-          className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-white outline-none focus:border-violet-500"
+          className="app-input focus:border-violet-500"
           required
         />
         {error && <p className="text-xs text-red-400">{error}</p>}
@@ -145,7 +145,7 @@ export default function ForgotPasswordForm({
         placeholder="E-mail cadastrado"
         value={email}
         onChange={e => setEmail(e.target.value)}
-        className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-white outline-none focus:border-violet-500"
+        className="app-input focus:border-violet-500"
         required
       />
       {error && <p className="text-xs text-red-400">{error}</p>}
