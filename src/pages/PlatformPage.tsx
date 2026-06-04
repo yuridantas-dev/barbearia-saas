@@ -84,11 +84,11 @@ export default function PlatformPage() {
     e.preventDefault();
     setError('');
     try {
-      await loginStaff(email, password, '');
+      await loginStaff(email.trim(), password.trim(), '');
       setAuthed(true);
       await loadShops();
-    } catch {
-      setError('Credenciais inválidas');
+    } catch (err) {
+      setError((err as Error).message || 'Credenciais inválidas');
     }
   };
 
@@ -165,6 +165,9 @@ export default function PlatformPage() {
                 required
               />
               {error && <p className="text-xs text-red-400">{error}</p>}
+              <p className="text-[10px] text-zinc-600 leading-relaxed">
+                Acesso exclusivo do dono da plataforma SaaS. Se você é dono de barbearia, use o link /admin/slug enviado pelo administrador.
+              </p>
               <button type="submit" className="w-full py-2.5 bg-violet-600 text-white rounded-xl font-semibold text-sm">
                 Entrar no painel SaaS
               </button>

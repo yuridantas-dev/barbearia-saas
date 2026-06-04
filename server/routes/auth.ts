@@ -214,6 +214,7 @@ router.post('/login-staff', async (req, res) => {
     }
 
     const normalized = normalizeEmail(email);
+    const passwordClean = password.trim();
     const rows = await query<{
       id: string;
       email: string;
@@ -224,7 +225,7 @@ router.post('/login-staff', async (req, res) => {
 
     if (rows.length === 0) return res.status(401).json({ error: 'Credenciais inválidas' });
     const user = rows[0];
-    const ok = await verifyPassword(password, user.password_hash);
+    const ok = await verifyPassword(passwordClean, user.password_hash);
     if (!ok) return res.status(401).json({ error: 'Credenciais inválidas' });
 
     if (user.is_platform_admin) {
@@ -242,7 +243,9 @@ router.post('/login-staff', async (req, res) => {
     }
 
     if (!shopSlug) {
-      return res.status(400).json({ error: 'Informe a barbearia (shopSlug)' });
+      return res.status(403).json({
+        error: 'Esta conta não é administrador da plataforma. Use o e-mail cadastrado no painel SaaS.'
+      });
     }
 
     const membership = await query<{ role: string; shop_id: string; shop_name: string; slug: string }>`
