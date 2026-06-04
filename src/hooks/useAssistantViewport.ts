@@ -1,23 +1,15 @@
 import { useEffect, useState } from 'react';
-
-const VIEWPORT_DEFAULT = 'width=device-width, initial-scale=1.0, viewport-fit=cover';
-/** Sem zoom no iOS; teclado sobrepõe a página em vez de redimensionar */
-const VIEWPORT_ASSISTANT =
-  'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=overlays-content';
+import { attachNoZoomGestures, syncAssistantViewport } from '../lib/assistantViewport';
 
 /**
- * Modo tela cheia do assistente: bloqueia zoom ao focar input e mede altura do teclado.
+ * Teclado virtual + bloqueio de zoom no assistente (/b/:slug).
  */
-export function useAssistantViewport() {
+export function useAssistantViewport(pathname: string) {
   const [keyboardInset, setKeyboardInset] = useState(0);
 
   useEffect(() => {
-    const meta = document.querySelector('meta[name="viewport"]');
-    const previous = meta?.getAttribute('content') ?? VIEWPORT_DEFAULT;
-    meta?.setAttribute('content', VIEWPORT_ASSISTANT);
-
-    document.documentElement.classList.add('assistant-fullscreen');
-    document.body.classList.add('assistant-fullscreen');
+    syncAssistantViewport(pathname);
+    attachNoZoomGestures();
 
     const updateKeyboardInset = () => {
       const vv = window.visualViewport;
@@ -34,14 +26,11 @@ export function useAssistantViewport() {
     window.visualViewport?.addEventListener('scroll', updateKeyboardInset);
 
     return () => {
-      meta?.setAttribute('content', previous);
-      document.documentElement.classList.remove('assistant-fullscreen');
-      document.body.classList.remove('assistant-fullscreen');
       window.visualViewport?.removeEventListener('resize', updateKeyboardInset);
       window.visualViewport?.removeEventListener('scroll', updateKeyboardInset);
       setKeyboardInset(0);
     };
-  }, []);
+  }, [pathname]);
 
   return keyboardInset;
 }

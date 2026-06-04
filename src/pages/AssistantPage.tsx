@@ -7,7 +7,7 @@ import ChatAssistant from '../components/ChatAssistant';
 
 function AssistantView({ slug }: { slug: string }) {
   const store = useBarbeariaStore(slug);
-  const keyboardInset = useAssistantViewport();
+  const keyboardInset = useAssistantViewport(`/b/${slug}`);
 
   if (store.shopNotFound && !store.loading) {
     return (

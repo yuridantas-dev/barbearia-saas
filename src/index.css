@@ -42,10 +42,16 @@ body {
 }
 
 /* Assistente (/b/:slug) — tela fixa, sem zoom ao focar input */
+html.assistant-fullscreen {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
 html.assistant-fullscreen,
 body.assistant-fullscreen {
   overflow: hidden;
   position: fixed;
+  inset: 0;
   width: 100%;
   height: 100%;
   height: 100dvh;
@@ -67,10 +73,15 @@ body.assistant-fullscreen select {
   -webkit-text-size-adjust: 100%;
 }
 
+.chat-msg-input,
 #chat-msg-input {
-  font-size: 16px !important;
-  transform: scale(1);
+  font-size: 18px !important;
+  line-height: 1.35 !important;
+  transform: none !important;
+  zoom: 1;
   touch-action: manipulation;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .app-input {

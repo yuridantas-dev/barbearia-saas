@@ -28,6 +28,7 @@ import {
   cancellationToChatMessage
 } from '../cancellationReceipts';
 import { normalizeEmail, isValidEmail, getCurrentUser, setCurrentUserId, createUser, verifyLogin, logoutUser, requestPasswordResetLocal, resetPasswordLocal } from '../userMemory';
+import { primeInputNoZoom } from '../lib/assistantViewport';
 
 interface ChatAssistantProps {
   useApi?: boolean;
@@ -1601,14 +1602,19 @@ export default function ChatAssistant({
             ref={inputRef}
             id="chat-msg-input"
             type="text"
+            inputMode="text"
             enterKeyHint="send"
             autoComplete="off"
             autoCorrect="off"
+            autoCapitalize="sentences"
             spellCheck={false}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
+            onTouchStart={(e) => primeInputNoZoom(e.currentTarget)}
             onFocus={() => {
               window.scrollTo(0, 0);
+              document.documentElement.scrollTop = 0;
+              document.body.scrollTop = 0;
               scrollChatToEnd();
               const estimate = Math.round(Math.min(340, window.innerHeight * 0.42));
               setTimeout(() => {
@@ -1622,8 +1628,7 @@ export default function ChatAssistant({
                 ? 'Sua chave PIX...'
                 : 'Mensagem...'
             }
-            className="flex-1 min-h-[44px] px-4 py-3 bg-zinc-900 border border-zinc-700/80 focus:border-amber-500/80 focus:ring-2 focus:ring-amber-500/20 rounded-2xl placeholder:text-zinc-500 text-white outline-none transition-all touch-manipulation"
-            style={{ fontSize: 16 }}
+            className="chat-msg-input flex-1 min-h-[48px] px-4 py-3 bg-zinc-900 border border-zinc-700/80 focus:border-amber-500/80 focus:ring-2 focus:ring-amber-500/20 rounded-2xl placeholder:text-zinc-500 text-white outline-none transition-colors touch-manipulation"
           />
 
           <button
