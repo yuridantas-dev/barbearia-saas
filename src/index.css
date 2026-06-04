@@ -41,6 +41,14 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Assistente (/b/:slug) — tela cheia no celular, sem scroll da página */
+body.assistant-fullscreen {
+  overflow: hidden;
+  height: 100dvh;
+  height: 100svh;
+  background-image: none;
+}
+
 .font-display {
   letter-spacing: -0.025em;
 }

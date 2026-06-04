@@ -1416,23 +1416,28 @@ export default function ChatAssistant({
   };
 
   return (
-    <div className="flex flex-col h-full bg-zinc-900/80 rounded-2xl border border-zinc-800/80 overflow-hidden shadow-2xl shadow-black/20 relative">
+    <div className="flex flex-col h-full min-h-0 bg-zinc-950 overflow-hidden relative sm:bg-zinc-900/80 sm:rounded-2xl sm:border sm:border-zinc-800/80 sm:shadow-2xl sm:shadow-black/20">
       
       {/* Chat header */}
-      <div className="px-4 py-3 bg-zinc-900/90 backdrop-blur-sm border-b border-zinc-800/80 flex justify-between items-center shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center text-zinc-950 font-bold relative shadow-lg shadow-amber-500/20">
+      <div className="px-3 py-2.5 sm:px-4 sm:py-3 bg-zinc-950 sm:bg-zinc-900/90 backdrop-blur-sm border-b border-zinc-800/80 flex justify-between items-center shrink-0 pt-[max(0.625rem,env(safe-area-inset-top))]">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500 flex items-center justify-center text-zinc-950 font-bold relative shadow-lg shadow-amber-500/20 shrink-0">
             <Scissors className="w-4 h-4" />
-            {/* Online status indicator */}
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-amber-500 border-2 border-zinc-900 rounded-full" />
+            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-amber-500 border-2 border-zinc-950 sm:border-zinc-900 rounded-full" />
           </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <h2 className="font-bold text-sm text-white font-display">Assistente Virtual</h2>
-              <span className="text-[9px] bg-amber-500/10 text-amber-500 px-1 py-0.2 rounded uppercase tracking-wider font-extrabold font-display">BarberAI</span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <h2 className="font-bold text-sm text-white font-display truncate sm:max-w-none">
+                <span className="sm:hidden">{config.name}</span>
+                <span className="hidden sm:inline">Assistente Virtual</span>
+              </h2>
+              <span className="text-[9px] bg-amber-500/10 text-amber-500 px-1 py-0.5 rounded uppercase tracking-wider font-extrabold font-display shrink-0">
+                BarberAI
+              </span>
             </div>
-            <p className="text-[10px] text-slate-400">
-              {currentUser ? 'Online' : 'Aguardando login'}
+            <p className="text-[10px] text-slate-400 truncate">
+              <span className="sm:hidden">Assistente · {currentUser ? 'Online' : 'Aguardando login'}</span>
+              <span className="hidden sm:inline">{currentUser ? 'Online' : 'Aguardando login'}</span>
             </p>
           </div>
         </div>
@@ -1451,7 +1456,7 @@ export default function ChatAssistant({
       </div>
 
       {/* Message area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-4 space-y-4">
         <AnimatePresence initial={false}>
           {messages.map(msg => {
             const isAss = msg.sender === 'assistant';
@@ -1533,7 +1538,7 @@ export default function ChatAssistant({
       </div>
 
       {/* Input panel */}
-      <div className="p-3 bg-zinc-900/90 backdrop-blur-sm border-t border-zinc-800/80 shrink-0">
+      <div className="p-3 bg-zinc-950 sm:bg-zinc-900/90 backdrop-blur-sm border-t border-zinc-800/80 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         {currentUser && (
           <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-zinc-800/60">
             <div className="flex items-center gap-2 min-w-0">
@@ -1587,7 +1592,7 @@ export default function ChatAssistant({
           </button>
         </form>
 
-        <p className="text-[10px] text-slate-500 text-center mt-2 font-mono">
+        <p className="hidden sm:block text-[10px] text-slate-500 text-center mt-2 font-mono">
           © {config.name} • Agendamentos Rápidos com Sincronização Inteligente
         </p>
       </div>

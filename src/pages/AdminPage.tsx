@@ -3,8 +3,8 @@ import { Link, useParams, Navigate } from 'react-router-dom';
 import { Scissors, Sliders, Info, RefreshCw, Calendar, LogOut, Shield, Link2 } from 'lucide-react';
 import { getAssistantUrl, getAdminUrl } from '../shops';
 import { useBarbeariaStore } from '../hooks/useBarbeariaStore';
-import { loginStaff, logoutStaff, fetchMe } from '../api/authApi';
-import { getToken } from '../api/client';
+import { loginStaff, logoutStaff, verifyStaffShopAccess } from '../api/authApi';
+import { API_BASE } from '../api/client';
 import ForgotPasswordForm from '../components/ForgotPasswordForm';
 import { FullLinkDisplay } from '../components/CopyLinkButton';
 import AgendaPanel from '../components/AgendaPanel';
@@ -97,8 +97,8 @@ function AdminView({ slug }: { slug: string }) {
   const [staffUser, setStaffUser] = useState<{ name: string; email: string } | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
-  const requiresStaffAuth =
-    store.useApi || Boolean(import.meta.env.VITE_API_URL);
+  // Com API configurada, admin sempre exige login nesta barbearia (sessão SaaS não vale)
+  const requiresStaffAuth = API_BASE !== '/api' || store.useApi;
 
   useEffect(() => {
     if (!requiresStaffAuth) {
@@ -106,19 +106,11 @@ function AdminView({ slug }: { slug: string }) {
       return;
     }
 
-    const staffToken = getToken('staff');
-    const platformToken = getToken('platform');
-
-    if (staffToken || platformToken) {
-      fetchMe(platformToken ? 'platform' : 'staff').then(u => {
-        if (u) setStaffUser(u);
-        setAuthChecked(true);
-      });
-    } else {
-      setStaffUser(null);
+    verifyStaffShopAccess(slug).then(u => {
+      setStaffUser(u);
       setAuthChecked(true);
-    }
-  }, [requiresStaffAuth]);
+    });
+  }, [requiresStaffAuth, slug]);
 
   if (store.loading) {
     return (

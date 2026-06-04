@@ -76,6 +76,21 @@ router.get('/:slug/public', async (req, res) => {
   });
 });
 
+/** Valida se o token (staff ou platform) tem acesso a esta barbearia */
+router.get('/:slug/staff/session', requireAuth, shopStaffOnly(), async (req: AuthRequest, res) => {
+  const rows = await query<{ id: string; name: string; email: string }>`
+    SELECT id, name, email FROM users WHERE id = ${req.user!.userId}
+  `;
+  if (rows.length === 0) return res.status(404).json({ error: 'Usuário não encontrado' });
+  const u = rows[0];
+  res.json({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: req.shopMemberRole
+  });
+});
+
 router.get('/:slug/appointments', requireAuth, shopStaffOnly(), async (req: AuthRequest, res) => {
   const shop = await getShopBySlug(req.params.slug);
   if (!shop) return res.status(404).json({ error: 'Barbearia não encontrada' });

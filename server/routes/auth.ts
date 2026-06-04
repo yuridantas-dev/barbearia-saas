@@ -205,8 +205,8 @@ function dbErrorMessage(e: unknown): string {
   if (msg.includes('does not exist') || msg.includes('relation')) {
     return 'Banco não migrado. No PC: npm run db:migrate (com DATABASE_URL do Neon no .env).';
   }
-  if (msg.includes('DATABASE_URL')) {
-    return 'API sem DATABASE_URL no Render.';
+  if (msg.includes('DATABASE_URL') || msg.includes('not a valid URL') || msg.includes('inválida')) {
+    return 'API sem DATABASE_URL válida no Render. Cole a URL postgresql:// do Neon (igual ao .env local).';
   }
   return 'Erro ao entrar';
 }

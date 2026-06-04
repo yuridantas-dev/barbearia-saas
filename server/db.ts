@@ -1,5 +1,6 @@
 import { neon, neonConfig, NeonQueryFunction } from '@neondatabase/serverless';
 import ws from 'ws';
+import { resolveDatabaseUrl } from './db-url.js';
 
 neonConfig.webSocketConstructor = ws;
 
@@ -7,10 +8,7 @@ let _sql: NeonQueryFunction<boolean, boolean> | null = null;
 
 function getSql(): NeonQueryFunction<boolean, boolean> {
   if (!_sql) {
-    if (!process.env.DATABASE_URL) {
-      throw new Error('DATABASE_URL não configurada');
-    }
-    _sql = neon(process.env.DATABASE_URL);
+    _sql = neon(resolveDatabaseUrl());
   }
   return _sql;
 }
