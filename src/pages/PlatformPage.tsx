@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, Plus, Users, LogOut, Store, ChevronDown, ChevronUp, ExternalLink, Trash2 } from 'lucide-react';
 import { apiFetch, API_BASE, getToken, isMisconfiguredProductionApi } from '../api/client';
-import { loginStaff, logoutPlatform, fetchMe } from '../api/authApi';
+import { loginPlatformAdmin, logoutPlatform, fetchPlatformMe } from '../api/authApi';
 import { getAdminUrl } from '../shops';
 import ForgotPasswordForm from '../components/ForgotPasswordForm';
 import { FullLinkDisplay } from '../components/CopyLinkButton';
@@ -58,10 +58,12 @@ export default function PlatformPage() {
         setChecking(false);
         return;
       }
-      const me = await fetchMe('platform');
+      const me = await fetchPlatformMe();
       if (me) {
         setAuthed(true);
         await loadShops();
+      } else {
+        logoutPlatform();
       }
       setChecking(false);
     })();
@@ -91,7 +93,7 @@ export default function PlatformPage() {
     e.preventDefault();
     setError('');
     try {
-      await loginStaff(email.trim(), password.trim(), '');
+      await loginPlatformAdmin(email.trim(), password.trim());
       setAuthed(true);
       await loadShops();
     } catch (err) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useParams, Navigate } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { Scissors, Sliders, Info, RefreshCw, Calendar, LogOut, Shield, Link2 } from 'lucide-react';
 import { getAssistantUrl, getAdminUrl } from '../shops';
 import { useBarbeariaStore } from '../hooks/useBarbeariaStore';
@@ -89,9 +89,6 @@ function StaffLogin({
         >
           Esqueci minha senha
         </button>
-        <Link to="/saas" className="block text-center text-xs text-zinc-500 hover:text-zinc-300">
-          ← Painel SaaS
-        </Link>
           </form>
         )}
       </div>
@@ -142,7 +139,7 @@ function AdminView({ slug }: { slug: string }) {
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 text-center">
         <div className="space-y-3">
           <p className="text-zinc-400">Barbearia não encontrada.</p>
-          <Link to="/saas" className="text-violet-400 text-sm hover:underline">← Painel SaaS</Link>
+          <p className="text-xs text-zinc-500">Verifique o link enviado pelo administrador da plataforma.</p>
         </div>
       </div>
     );
@@ -320,7 +317,11 @@ export default function AdminPage() {
   const { slug } = useParams<{ slug: string }>();
 
   if (!slug) {
-    return <Navigate to="/saas" replace />;
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 text-center text-zinc-400 text-sm">
+        Link inválido. Use o endereço /admin/sua-barbearia.
+      </div>
+    );
   }
 
   return <AdminView slug={slug} />;

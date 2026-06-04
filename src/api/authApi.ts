@@ -5,6 +5,7 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
+  isPlatformAdmin?: boolean;
 }
 
 export async function registerCustomer(name: string, email: string, pin: string): Promise<AuthUser> {
@@ -64,9 +65,45 @@ export async function loginStaff(
     method: 'POST',
     body: JSON.stringify({ email, password, shopSlug: shopSlug || undefined })
   });
-  setToken(data.role === 'platform_admin' ? 'platform' : 'staff', data.token);
-  if (shopSlug) setStaffShopSlug(shopSlug);
+  if (data.role === 'platform_admin') {
+    setToken('platform', data.token);
+    setToken('staff', null);
+    if (shopSlug) setStaffShopSlug(shopSlug);
+    else setStaffShopSlug(null);
+  } else {
+    setToken('staff', data.token);
+    setToken('platform', null);
+    if (shopSlug) setStaffShopSlug(shopSlug);
+  }
   return { user: data.user, role: data.role };
+}
+
+/** Login exclusivo do painel SaaS — só administrador da plataforma */
+export async function loginPlatformAdmin(email: string, password: string): Promise<AuthUser> {
+  const { user, role } = await loginStaff(email, password, '');
+  if (role !== 'platform_admin') {
+    setToken('platform', null);
+    setToken('staff', null);
+    setStaffShopSlug(null);
+    throw new Error('Esta conta não tem acesso ao painel SaaS. Use o link /admin da sua barbearia.');
+  }
+  return user;
+}
+
+/** Sessão válida apenas para dono da plataforma (não dono de barbearia) */
+export async function fetchPlatformMe(): Promise<AuthUser | null> {
+  if (!getToken('platform')) return null;
+  try {
+    const me = await apiFetch<AuthUser>('/auth/me', {}, 'platform');
+    if (!me.isPlatformAdmin) {
+      setToken('platform', null);
+      return null;
+    }
+    return me;
+  } catch {
+    setToken('platform', null);
+    return null;
+  }
 }
 
 /** Só considera logado no admin se entrou nesta barbearia (não usa sessão do painel SaaS). */
@@ -74,11 +111,13 @@ export async function verifyStaffShopAccess(slug: string): Promise<AuthUser | nu
   const boundSlug = getStaffShopSlug();
   if (boundSlug !== slug) return null;
 
-  const tokenKind: TokenKind | null = getToken('staff')
-    ? 'staff'
-    : getToken('platform')
-      ? 'platform'
-      : null;
+  let tokenKind: TokenKind | null = null;
+  if (getToken('staff')) {
+    tokenKind = 'staff';
+  } else if (getToken('platform')) {
+    const platformMe = await fetchPlatformMe();
+    if (platformMe) tokenKind = 'platform';
+  }
   if (!tokenKind) return null;
 
   try {
