@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, Plus, Users, LogOut, Store, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
-import { apiFetch, getToken } from '../api/client';
+import { apiFetch, API_BASE, getToken, isMisconfiguredProductionApi } from '../api/client';
 import { loginStaff, logoutPlatform, fetchMe } from '../api/authApi';
 import { getAdminUrl } from '../shops';
 import ForgotPasswordForm from '../components/ForgotPasswordForm';
@@ -140,6 +140,15 @@ export default function PlatformPage() {
             <p className="text-xs text-zinc-500">Painel do dono da plataforma</p>
           </div>
 
+          {isMisconfiguredProductionApi && (
+            <p className="text-xs text-amber-400 bg-amber-950/40 border border-amber-900/50 rounded-lg p-3 leading-relaxed">
+              API não configurada no build. Faça um novo deploy na Vercel com o arquivo{' '}
+              <code className="text-amber-200">.env.production</code> no GitHub ou defina{' '}
+              <code className="text-amber-200">VITE_API_URL=https://barbearia-api-tb5o.onrender.com/api</code> nas
+              variáveis de ambiente.
+            </p>
+          )}
+
           {showForgot ? (
             <ForgotPasswordForm
               accountType="staff"
@@ -165,6 +174,9 @@ export default function PlatformPage() {
                 required
               />
               {error && <p className="text-xs text-red-400">{error}</p>}
+              {!isMisconfiguredProductionApi && (
+                <p className="text-[10px] text-zinc-600 font-mono break-all">API: {API_BASE}</p>
+              )}
               <p className="text-[10px] text-zinc-600 leading-relaxed">
                 Acesso exclusivo do dono da plataforma SaaS. Se você é dono de barbearia, use o link /admin/slug enviado pelo administrador.
               </p>

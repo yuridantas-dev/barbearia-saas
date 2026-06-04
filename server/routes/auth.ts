@@ -195,10 +195,21 @@ router.post('/login-customer', async (req, res) => {
     });
     res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Erro ao entrar' });
+    console.error('[login-customer]', e);
+    res.status(500).json({ error: dbErrorMessage(e) });
   }
 });
+
+function dbErrorMessage(e: unknown): string {
+  const msg = e instanceof Error ? e.message : '';
+  if (msg.includes('does not exist') || msg.includes('relation')) {
+    return 'Banco não migrado. No PC: npm run db:migrate (com DATABASE_URL do Neon no .env).';
+  }
+  if (msg.includes('DATABASE_URL')) {
+    return 'API sem DATABASE_URL no Render.';
+  }
+  return 'Erro ao entrar';
+}
 
 /** Login staff (dono, gerente, barbeiro) ou platform admin */
 router.post('/login-staff', async (req, res) => {
@@ -272,8 +283,8 @@ router.post('/login-staff', async (req, res) => {
       shop: { id: membership[0].shop_id, name: membership[0].shop_name, slug: membership[0].slug }
     });
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Erro ao entrar' });
+    console.error('[login-staff]', e);
+    res.status(500).json({ error: dbErrorMessage(e) });
   }
 });
 
