@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Plus, Users, LogOut, Store, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { Shield, Plus, Users, LogOut, Store, ChevronDown, ChevronUp, ExternalLink, Trash2 } from 'lucide-react';
 import { apiFetch, API_BASE, getToken, isMisconfiguredProductionApi } from '../api/client';
 import { loginStaff, logoutPlatform, fetchMe } from '../api/authApi';
 import { getAdminUrl } from '../shops';
@@ -30,6 +30,12 @@ const emptyMemberForm = {
   role: 'owner' as 'owner' | 'manager' | 'barber'
 };
 
+const ROLE_LABELS: Record<string, string> = {
+  owner: 'Dono',
+  manager: 'Gerente',
+  barber: 'Barbeiro'
+};
+
 export default function PlatformPage() {
   const [authed, setAuthed] = useState(false);
   const [checking, setChecking] = useState(true);
@@ -41,6 +47,7 @@ export default function PlatformPage() {
   const [expandedShop, setExpandedShop] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [memberSuccess, setMemberSuccess] = useState('');
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
 
   const [newShop, setNewShop] = useState({ slug: '', name: '', tagline: '' });
   const [memberForm, setMemberForm] = useState(emptyMemberForm);
@@ -106,6 +113,31 @@ export default function PlatformPage() {
       await loadShops();
     } catch (err) {
       setError((err as Error).message || 'Erro ao criar barbearia');
+    }
+  };
+
+  const handleRemoveMember = async (shopId: string, member: MemberRow) => {
+    const roleLabel = ROLE_LABELS[member.role] || member.role;
+    const ok = window.confirm(
+      `Remover o acesso de ${member.name} (${member.email})?\n\nPapel: ${roleLabel}. A pessoa não poderá mais entrar no painel admin desta barbearia.`
+    );
+    if (!ok) return;
+
+    setError('');
+    setMemberSuccess('');
+    setRemovingMemberId(member.id);
+    try {
+      await apiFetch(
+        `/platform/shops/${shopId}/members/${member.id}`,
+        { method: 'DELETE' },
+        'platform'
+      );
+      setMemberSuccess(`Acesso de ${member.email} removido.`);
+      await loadMembers(shopId);
+    } catch (err) {
+      setError((err as Error).message || 'Erro ao remover membro');
+    } finally {
+      setRemovingMemberId(null);
     }
   };
 
@@ -280,6 +312,16 @@ export default function PlatformPage() {
 
                 {expanded && (
                   <div className="px-4 pb-4 space-y-4 border-t border-zinc-800/80 pt-4">
+                    {memberSuccess && expandedShop === shop.id && (
+                      <p className="text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-900/50 rounded-lg px-3 py-2">
+                        {memberSuccess}
+                      </p>
+                    )}
+                    {error && expandedShop === shop.id && (
+                      <p className="text-xs text-red-400 bg-red-950/30 border border-red-900/40 rounded-lg px-3 py-2">
+                        {error}
+                      </p>
+                    )}
                     <div>
                       <p className="text-[11px] font-semibold text-violet-400 mb-2">Link do painel admin (envie ao dono)</p>
                       <FullLinkDisplay
@@ -295,19 +337,42 @@ export default function PlatformPage() {
                       </Link>
                     </div>
 
-                    {members.length > 0 && (
-                      <div>
-                        <p className="text-[11px] font-semibold text-zinc-400 mb-2">Equipe cadastrada</p>
-                        <ul className="space-y-1">
+                    <div>
+                      <p className="text-[11px] font-semibold text-zinc-400 mb-2">
+                        Equipe cadastrada {members.length > 0 ? `(${members.length})` : ''}
+                      </p>
+                      {members.length === 0 ? (
+                        <p className="text-xs text-zinc-500 py-2 px-2 bg-zinc-950 rounded-lg">
+                          Nenhum acesso ainda. Cadastre o dono abaixo.
+                        </p>
+                      ) : (
+                        <ul className="space-y-2">
                           {members.map(m => (
-                            <li key={m.id} className="text-xs text-zinc-300 flex justify-between gap-2 py-1.5 px-2 bg-zinc-950 rounded-lg">
-                              <span>{m.name} — {m.email}</span>
-                              <span className="text-zinc-500 capitalize">{m.role}</span>
+                            <li
+                              key={m.id}
+                              className="text-xs text-zinc-300 flex items-center justify-between gap-2 py-2 px-3 bg-zinc-950 rounded-lg border border-zinc-800/60"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-white truncate">{m.name}</p>
+                                <p className="text-zinc-500 truncate">{m.email}</p>
+                              </div>
+                              <span className="text-[10px] font-semibold text-violet-400/90 bg-violet-500/10 px-2 py-0.5 rounded-md shrink-0">
+                                {ROLE_LABELS[m.role] || m.role}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveMember(shop.id, m)}
+                                disabled={removingMemberId === m.id}
+                                className="p-2 rounded-lg text-red-400 hover:text-white hover:bg-red-500/20 border border-transparent hover:border-red-500/40 transition-all shrink-0 disabled:opacity-40"
+                                title="Remover acesso desta barbearia"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </li>
                           ))}
                         </ul>
-                      </div>
-                    )}
+                      )}
+                    </div>
 
                     <form
                       onSubmit={e => handleAddMember(e, shop.id)}
@@ -351,8 +416,6 @@ export default function PlatformPage() {
                           <option value="barber">Barbeiro</option>
                         </select>
                       </div>
-                      {memberSuccess && formOpen && <p className="text-xs text-emerald-400">{memberSuccess}</p>}
-                      {error && formOpen && <p className="text-xs text-red-400">{error}</p>}
                       <button type="submit" className="px-4 py-2 bg-amber-600 text-white rounded-lg text-xs font-semibold">
                         Criar acesso
                       </button>

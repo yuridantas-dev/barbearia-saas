@@ -107,4 +107,41 @@ router.get('/shops/:shopId/members', async (req, res) => {
   res.json(members);
 });
 
+/** Remover acesso da equipe (não apaga o usuário do sistema) */
+router.delete('/shops/:shopId/members/:userId', async (req, res) => {
+  try {
+    const { shopId, userId } = req.params;
+
+    const membership = await query<{ role: string }>`
+      SELECT role FROM shop_members
+      WHERE shop_id = ${shopId} AND user_id = ${userId}
+    `;
+
+    if (membership.length === 0) {
+      return res.status(404).json({ error: 'Membro não encontrado nesta barbearia' });
+    }
+
+    if (membership[0].role === 'owner') {
+      const owners = await query<{ n: number }>`
+        SELECT COUNT(*)::int AS n FROM shop_members
+        WHERE shop_id = ${shopId} AND role = 'owner'
+      `;
+      if (owners[0].n <= 1) {
+        return res.status(400).json({
+          error: 'Não é possível remover o único dono. Cadastre outro dono antes ou altere o papel deste usuário.'
+        });
+      }
+    }
+
+    await query`
+      DELETE FROM shop_members WHERE shop_id = ${shopId} AND user_id = ${userId}
+    `;
+
+    res.json({ ok: true, message: 'Acesso removido desta barbearia' });
+  } catch (e) {
+    console.error('[platform] delete member', e);
+    res.status(500).json({ error: 'Erro ao remover membro' });
+  }
+});
+
 export default router;
