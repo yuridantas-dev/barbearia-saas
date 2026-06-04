@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, Navigate } from 'react-router-dom';
-import { Scissors, MessageSquare, Sliders, Info, RefreshCw, Calendar, LogOut, Shield } from 'lucide-react';
-import { getShopBySlug, getAssistantUrl } from '../shops';
+import { Scissors, Sliders, Info, RefreshCw, Calendar, LogOut, Shield, Link2 } from 'lucide-react';
+import { getAssistantUrl, getAdminUrl } from '../shops';
 import { useBarbeariaStore } from '../hooks/useBarbeariaStore';
 import { loginStaff, logoutStaff, fetchMe } from '../api/authApi';
 import { getToken } from '../api/client';
 import ForgotPasswordForm from '../components/ForgotPasswordForm';
+import { FullLinkDisplay } from '../components/CopyLinkButton';
 import AgendaPanel from '../components/AgendaPanel';
 import SettingsPanel from '../components/SettingsPanel';
 
@@ -80,8 +81,8 @@ function StaffLogin({ slug, onSuccess }: { slug: string; onSuccess: () => void }
         >
           Esqueci minha senha
         </button>
-        <Link to="/" className="block text-center text-xs text-zinc-500 hover:text-zinc-300">
-          ← Voltar
+        <Link to="/saas" className="block text-center text-xs text-zinc-500 hover:text-zinc-300">
+          ← Painel SaaS
         </Link>
           </form>
         )}
@@ -92,7 +93,7 @@ function StaffLogin({ slug, onSuccess }: { slug: string; onSuccess: () => void }
 
 function AdminView({ slug }: { slug: string }) {
   const store = useBarbeariaStore(slug, { admin: true });
-  const [activeTab, setActiveTab] = useState<'agenda' | 'settings'>('agenda');
+  const [activeTab, setActiveTab] = useState<'agenda' | 'settings' | 'links'>('agenda');
   const [staffUser, setStaffUser] = useState<{ name: string; email: string } | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
@@ -123,6 +124,17 @@ function AdminView({ slug }: { slug: string }) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center text-zinc-400 text-sm">
         Carregando...
+      </div>
+    );
+  }
+
+  if (store.shopNotFound && !store.loading) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 text-center">
+        <div className="space-y-3">
+          <p className="text-zinc-400">Barbearia não encontrada.</p>
+          <Link to="/saas" className="text-violet-400 text-sm hover:underline">← Painel SaaS</Link>
+        </div>
       </div>
     );
   }
@@ -176,12 +188,16 @@ function AdminView({ slug }: { slug: string }) {
             >
               <Sliders className="w-3.5 h-3.5" /> Configurações
             </button>
-            <Link
-              to={getAssistantUrl(slug)}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-800 bg-slate-950/50 text-slate-400 hover:text-amber-500 flex items-center gap-1.5 transition-all"
+            <button
+              onClick={() => setActiveTab('links')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                activeTab === 'links'
+                  ? 'bg-amber-500 text-slate-950 font-bold'
+                  : 'bg-slate-950/40 text-slate-400 border border-slate-900 hover:text-white'
+              }`}
             >
-              <MessageSquare className="w-3.5 h-3.5" /> Assistente
-            </Link>
+              <Link2 className="w-3.5 h-3.5" /> Links
+            </button>
             {store.useApi && staffUser && (
               <button
                 onClick={handleLogout}
@@ -220,7 +236,7 @@ function AdminView({ slug }: { slug: string }) {
               onMarkNotificationRead={store.markNotificationRead}
             />
           </div>
-        ) : (
+        ) : activeTab === 'settings' ? (
           <div className="flex-1 overflow-y-auto pr-1">
             <div className="max-w-4xl mx-auto space-y-4">
               <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-2">
@@ -229,11 +245,7 @@ function AdminView({ slug }: { slug: string }) {
                   <h3 className="font-bold text-sm text-white font-display">Painel de Customização</h3>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Alterações aqui refletem imediatamente no assistente em{' '}
-                  <Link to={getAssistantUrl(slug)} className="text-amber-500 hover:underline font-mono">
-                    /b/{slug}
-                  </Link>
-                  .
+                  Alterações aqui refletem imediatamente no assistente virtual dos seus clientes.
                 </p>
               </div>
               <SettingsPanel
@@ -244,6 +256,36 @@ function AdminView({ slug }: { slug: string }) {
                 barbers={store.barbers}
                 onUpdateBarbers={store.setBarbers}
               />
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto pr-1">
+            <div className="max-w-2xl mx-auto space-y-4">
+              <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-2">
+                <div className="flex items-center gap-2">
+                  <Link2 className="w-4 h-4 text-amber-500" />
+                  <h3 className="font-bold text-sm text-white font-display">Links da sua barbearia</h3>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Compartilhe o link do assistente com seus clientes (WhatsApp, Instagram, etc.).
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-amber-500">Assistente — clientes agendam aqui</p>
+                <FullLinkDisplay
+                  path={getAssistantUrl(slug)}
+                  description="Envie este link para seus clientes agendarem pelo chat."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-violet-400">Admin — equipe da barbearia</p>
+                <FullLinkDisplay
+                  path={getAdminUrl(slug)}
+                  description="Link para você e sua equipe acessarem agenda e configurações."
+                />
+              </div>
             </div>
           </div>
         )}
@@ -258,10 +300,9 @@ function AdminView({ slug }: { slug: string }) {
 
 export default function AdminPage() {
   const { slug } = useParams<{ slug: string }>();
-  const shop = getShopBySlug(slug);
 
-  if (!shop || !slug) {
-    return <Navigate to="/" replace />;
+  if (!slug) {
+    return <Navigate to="/saas" replace />;
   }
 
   return <AdminView slug={slug} />;

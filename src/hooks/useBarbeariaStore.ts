@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiFetch, checkApiHealth, getToken, TokenKind } from '../api/client';
 import { AppNotification, Service, Barber, Appointment, BarbeariaConfig } from '../types';
 import { DEFAULT_SERVICES, DEFAULT_BARBERS, DEFAULT_APPOINTMENTS } from '../data';
-import { getShopBySlug } from '../shops';
+import { getShopBySlug, getFallbackShop } from '../shops';
 import { writeShopJson, removeShopKey, setActiveShopSlug } from '../shopStorage';
 import {
   appendNotifications,
@@ -31,53 +31,64 @@ export function useBarbeariaStore(slug: string, options?: StoreOptions) {
   const forceApi = adminMode && Boolean(import.meta.env.VITE_API_URL);
 
   const staticShop = getShopBySlug(slug);
-  if (!staticShop) throw new Error(`Barbearia inválida: ${slug}`);
+  const shopDef = staticShop ?? getFallbackShop(slug);
+  if (!slug) throw new Error('Barbearia inválida');
 
   setActiveShopSlug(slug);
 
   const [useApi, setUseApi] = useState(forceApi);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [config, setConfig] = useState<BarbeariaConfig>(staticShop.config);
+  const [shopNotFound, setShopNotFound] = useState(false);
+  const [config, setConfig] = useState<BarbeariaConfig>(shopDef.config);
   const [services, setServices] = useState<Service[]>(DEFAULT_SERVICES);
   const [barbers, setBarbers] = useState<Barber[]>(DEFAULT_BARBERS);
   const [appointments, setAppointments] = useState<Appointment[]>(DEFAULT_APPOINTMENTS);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
   const loadFromApi = useCallback(async () => {
-    const data = await apiFetch<{
-      config: BarbeariaConfig;
-      services: Service[];
-      barbers: Barber[];
-      appointments: Appointment[];
-      name: string;
-      tagline: string;
-    }>(`/shops/${slug}/public`);
-
-    setConfig(data.config);
-    setServices(data.services);
-    setBarbers(data.barbers);
-    setAppointments(data.appointments);
-
     try {
-      const notifs = await apiFetch<AppNotification[]>(
-        `/shops/${slug}/notifications`,
-        {},
-        'staff'
-      );
-      setNotifications(notifs);
-    } catch {
-      setNotifications([]);
+      const data = await apiFetch<{
+        config: BarbeariaConfig;
+        services: Service[];
+        barbers: Barber[];
+        appointments: Appointment[];
+        name: string;
+        tagline: string;
+      }>(`/shops/${slug}/public`);
+
+      setShopNotFound(false);
+      setConfig(data.config);
+      setServices(data.services);
+      setBarbers(data.barbers);
+      setAppointments(data.appointments);
+
+      try {
+        const notifs = await apiFetch<AppNotification[]>(
+          `/shops/${slug}/notifications`,
+          {},
+          'staff'
+        );
+        setNotifications(notifs);
+      } catch {
+        setNotifications([]);
+      }
+    } catch (e) {
+      const msg = (e as Error).message || '';
+      if (msg.includes('404') || msg.includes('não encontrada') || msg.includes('not found')) {
+        setShopNotFound(true);
+      }
+      throw e;
     }
   }, [slug]);
 
   const loadLocalData = useCallback(() => {
-    setConfig(loadLocal('barber_config', slug, staticShop.config));
+    setConfig(loadLocal('barber_config', slug, shopDef.config));
     setServices(loadLocal('barber_services', slug, DEFAULT_SERVICES));
     setBarbers(loadLocal('barber_barbers', slug, DEFAULT_BARBERS));
     setAppointments(loadLocal('barber_appointments', slug, DEFAULT_APPOINTMENTS));
     setNotifications(readNotifications());
-  }, [slug, staticShop.config]);
+  }, [slug, shopDef.config]);
 
   useEffect(() => {
     let cancelled = false;
@@ -245,10 +256,11 @@ export function useBarbeariaStore(slug: string, options?: StoreOptions) {
   }, [slug, useApi]);
 
   return {
-    shop: staticShop,
+    shop: shopDef,
     loading,
     useApi,
     apiError,
+    shopNotFound,
     config,
     setConfig: persistConfig,
     services,

@@ -48,6 +48,18 @@ export function getShopBySlug(slug: string | undefined): ShopDefinition | undefi
   return SHOPS.find(s => s.slug === slug);
 }
 
+/** Fallback para barbearias criadas na API (não estão no catálogo estático). */
+export function getFallbackShop(slug: string): ShopDefinition {
+  const existing = getShopBySlug(slug);
+  if (existing) return existing;
+  return {
+    slug,
+    name: slug.replace(/-/g, ' '),
+    tagline: '',
+    config: { ...DEFAULT_CONFIG, name: slug.replace(/-/g, ' ') }
+  };
+}
+
 export function getAssistantUrl(slug: string): string {
   return `/b/${slug}`;
 }

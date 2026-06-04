@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link, Navigate } from 'react-router-dom';
-import { Shield, Plus, Users, LogOut } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Shield, Plus, Users, LogOut, Store, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { apiFetch, getToken } from '../api/client';
 import { loginStaff, logoutPlatform, fetchMe } from '../api/authApi';
-import { getAdminUrl, getAssistantUrl } from '../shops';
+import { getAdminUrl } from '../shops';
 import ForgotPasswordForm from '../components/ForgotPasswordForm';
+import { FullLinkDisplay } from '../components/CopyLinkButton';
 
 interface ShopRow {
   id: string;
@@ -14,6 +15,21 @@ interface ShopRow {
   active: boolean;
 }
 
+interface MemberRow {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+}
+
+const emptyMemberForm = {
+  shopId: '',
+  email: '',
+  name: '',
+  password: '',
+  role: 'owner' as 'owner' | 'manager' | 'barber'
+};
+
 export default function PlatformPage() {
   const [authed, setAuthed] = useState(false);
   const [checking, setChecking] = useState(true);
@@ -21,16 +37,13 @@ export default function PlatformPage() {
   const [password, setPassword] = useState('');
   const [showForgot, setShowForgot] = useState(false);
   const [shops, setShops] = useState<ShopRow[]>([]);
+  const [membersByShop, setMembersByShop] = useState<Record<string, MemberRow[]>>({});
+  const [expandedShop, setExpandedShop] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [memberSuccess, setMemberSuccess] = useState('');
 
   const [newShop, setNewShop] = useState({ slug: '', name: '', tagline: '' });
-  const [memberForm, setMemberForm] = useState({
-    shopId: '',
-    email: '',
-    name: '',
-    password: '',
-    role: 'owner' as 'owner' | 'manager' | 'barber'
-  });
+  const [memberForm, setMemberForm] = useState(emptyMemberForm);
 
   useEffect(() => {
     (async () => {
@@ -41,7 +54,7 @@ export default function PlatformPage() {
       const me = await fetchMe('platform');
       if (me) {
         setAuthed(true);
-        loadShops();
+        await loadShops();
       }
       setChecking(false);
     })();
@@ -50,6 +63,21 @@ export default function PlatformPage() {
   const loadShops = async () => {
     const data = await apiFetch<ShopRow[]>('/platform/shops', {}, 'platform');
     setShops(data);
+  };
+
+  const loadMembers = async (shopId: string) => {
+    const data = await apiFetch<MemberRow[]>(`/platform/shops/${shopId}/members`, {}, 'platform');
+    setMembersByShop(prev => ({ ...prev, [shopId]: data }));
+  };
+
+  const toggleShop = async (shopId: string) => {
+    if (expandedShop === shopId) {
+      setExpandedShop(null);
+      return;
+    }
+    setExpandedShop(shopId);
+    setMemberForm({ ...emptyMemberForm, shopId });
+    if (!membersByShop[shopId]) await loadMembers(shopId);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -71,19 +99,29 @@ export default function PlatformPage() {
 
   const handleCreateShop = async (e: React.FormEvent) => {
     e.preventDefault();
-    await apiFetch('/platform/shops', { method: 'POST', body: JSON.stringify(newShop) }, 'platform');
-    setNewShop({ slug: '', name: '', tagline: '' });
-    await loadShops();
+    setError('');
+    try {
+      await apiFetch('/platform/shops', { method: 'POST', body: JSON.stringify(newShop) }, 'platform');
+      setNewShop({ slug: '', name: '', tagline: '' });
+      await loadShops();
+    } catch (err) {
+      setError((err as Error).message || 'Erro ao criar barbearia');
+    }
   };
 
-  const handleAddMember = async (e: React.FormEvent) => {
+  const handleAddMember = async (e: React.FormEvent, shopId: string) => {
     e.preventDefault();
-    await apiFetch(
-      `/platform/shops/${memberForm.shopId}/members`,
-      { method: 'POST', body: JSON.stringify(memberForm) },
-      'platform'
-    );
-    alert('Membro adicionado!');
+    setError('');
+    setMemberSuccess('');
+    const payload = { ...memberForm, shopId };
+    try {
+      await apiFetch(`/platform/shops/${shopId}/members`, { method: 'POST', body: JSON.stringify(payload) }, 'platform');
+      setMemberSuccess(`Acesso criado para ${memberForm.email}. Envie o link do admin ao dono.`);
+      await loadMembers(shopId);
+      setMemberForm({ ...emptyMemberForm, shopId });
+    } catch (err) {
+      setError((err as Error).message || 'Erro ao adicionar membro');
+    }
   };
 
   if (checking) {
@@ -95,9 +133,12 @@ export default function PlatformPage() {
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
         <div className="w-full max-w-md p-6 bg-zinc-900 border border-zinc-800 rounded-2xl space-y-4">
           <Shield className="w-10 h-10 text-violet-400 mx-auto" />
-          <h1 className="text-lg font-semibold text-white text-center font-display">
-            {showForgot ? 'Esqueci minha senha' : 'Painel SaaS'}
-          </h1>
+          <div className="text-center space-y-1">
+            <h1 className="text-lg font-semibold text-white font-display">
+              {showForgot ? 'Esqueci minha senha' : 'Barbearia SaaS'}
+            </h1>
+            <p className="text-xs text-zinc-500">Painel do dono da plataforma</p>
+          </div>
 
           {showForgot ? (
             <ForgotPasswordForm
@@ -107,34 +148,33 @@ export default function PlatformPage() {
             />
           ) : (
             <form onSubmit={handleLogin} className="space-y-4">
-          <input
-            type="email"
-            placeholder="E-mail admin"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-white"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Senha"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-white"
-            required
-          />
-          {error && <p className="text-xs text-red-400">{error}</p>}
-          <button type="submit" className="w-full py-2.5 bg-violet-600 text-white rounded-xl font-semibold text-sm">
-            Entrar
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowForgot(true)}
-            className="w-full text-xs text-zinc-400 hover:text-violet-400"
-          >
-            Esqueci minha senha
-          </button>
-          <Link to="/" className="block text-center text-xs text-zinc-500">← Início</Link>
+              <input
+                type="email"
+                placeholder="E-mail"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-white"
+                required
+              />
+              <input
+                type="password"
+                placeholder="Senha"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-white"
+                required
+              />
+              {error && <p className="text-xs text-red-400">{error}</p>}
+              <button type="submit" className="w-full py-2.5 bg-violet-600 text-white rounded-xl font-semibold text-sm">
+                Entrar no painel SaaS
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowForgot(true)}
+                className="w-full text-xs text-zinc-400 hover:text-violet-400"
+              >
+                Esqueci minha senha
+              </button>
             </form>
           )}
         </div>
@@ -144,10 +184,15 @@ export default function PlatformPage() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 p-4 sm:p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-xl font-semibold font-display">Painel SaaS — Barbearias</h1>
-          <button onClick={handleLogout} className="text-xs text-red-400 flex items-center gap-1 hover:text-red-300">
+      <div className="max-w-3xl mx-auto space-y-6">
+        <div className="flex justify-between items-start gap-4">
+          <div>
+            <h1 className="text-xl font-semibold font-display text-white">Painel SaaS</h1>
+            <p className="text-xs text-zinc-500 mt-1">
+              Crie barbearias e cadastre donos. Cada dono acessa o admin da loja e copia o link do assistente para clientes.
+            </p>
+          </div>
+          <button onClick={handleLogout} className="text-xs text-red-400 flex items-center gap-1 hover:text-red-300 shrink-0">
             <LogOut className="w-3.5 h-3.5" /> Sair
           </button>
         </div>
@@ -161,98 +206,146 @@ export default function PlatformPage() {
               placeholder="slug (ex: minha-barbearia)"
               value={newShop.slug}
               onChange={e => setNewShop(p => ({ ...p, slug: e.target.value }))}
-              className="px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-sm"
+              className="px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-sm text-white"
               required
             />
             <input
-              placeholder="Nome"
+              placeholder="Nome da barbearia"
               value={newShop.name}
               onChange={e => setNewShop(p => ({ ...p, name: e.target.value }))}
-              className="px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-sm"
+              className="px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-sm text-white"
               required
             />
             <input
-              placeholder="Tagline"
+              placeholder="Descrição curta"
               value={newShop.tagline}
               onChange={e => setNewShop(p => ({ ...p, tagline: e.target.value }))}
-              className="px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-sm"
+              className="px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-sm text-white"
             />
           </div>
+          {error && !expandedShop && <p className="text-xs text-red-400">{error}</p>}
           <button type="submit" className="px-4 py-2 bg-violet-600 text-white rounded-lg text-xs font-semibold">
             Criar barbearia
           </button>
         </form>
 
         <div className="space-y-3">
-          {shops.map(shop => (
-            <div key={shop.id} className="p-4 bg-zinc-900 border border-zinc-800 rounded-xl">
-              <div className="flex flex-wrap justify-between gap-2">
-                <div>
-                  <h3 className="font-semibold text-white">{shop.name}</h3>
-                  <p className="text-xs text-zinc-500 font-mono">{shop.slug}</p>
-                </div>
-                <div className="flex gap-2 text-xs">
-                  <Link to={getAssistantUrl(shop.slug)} className="text-amber-500 hover:underline">Assistente</Link>
-                  <Link to={getAdminUrl(shop.slug)} className="text-violet-400 hover:underline">Admin</Link>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <form onSubmit={handleAddMember} className="p-4 bg-zinc-900 border border-zinc-800 rounded-xl space-y-3">
-          <h2 className="text-sm font-semibold text-amber-500 flex items-center gap-2">
-            <Users className="w-4 h-4" /> Adicionar dono / barbeiro
+          <h2 className="text-sm font-semibold text-zinc-400 flex items-center gap-2">
+            <Store className="w-4 h-4" /> Barbearias ({shops.length})
           </h2>
-          <select
-            value={memberForm.shopId}
-            onChange={e => setMemberForm(p => ({ ...p, shopId: e.target.value }))}
-            className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-sm"
-            required
-          >
-            <option value="">Selecione a barbearia</option>
-            {shops.map(s => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <input
-              placeholder="Nome"
-              value={memberForm.name}
-              onChange={e => setMemberForm(p => ({ ...p, name: e.target.value }))}
-              className="px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-sm"
-              required
-            />
-            <input
-              type="email"
-              placeholder="E-mail"
-              value={memberForm.email}
-              onChange={e => setMemberForm(p => ({ ...p, email: e.target.value }))}
-              className="px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-sm"
-              required
-            />
-            <input
-              type="password"
-              placeholder="Senha inicial"
-              value={memberForm.password}
-              onChange={e => setMemberForm(p => ({ ...p, password: e.target.value }))}
-              className="px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-sm"
-              required
-            />
-            <select
-              value={memberForm.role}
-              onChange={e => setMemberForm(p => ({ ...p, role: e.target.value as typeof memberForm.role }))}
-              className="px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-sm"
-            >
-              <option value="owner">Dono</option>
-              <option value="manager">Gerente</option>
-              <option value="barber">Barbeiro</option>
-            </select>
-          </div>
-          <button type="submit" className="px-4 py-2 bg-amber-600 text-white rounded-lg text-xs font-semibold">
-            Adicionar membro
-          </button>
-        </form>
+
+          {shops.length === 0 && (
+            <p className="text-sm text-zinc-500 p-4 border border-dashed border-zinc-800 rounded-xl text-center">
+              Nenhuma barbearia ainda. Crie a primeira acima.
+            </p>
+          )}
+
+          {shops.map(shop => {
+            const expanded = expandedShop === shop.id;
+            const adminPath = getAdminUrl(shop.slug);
+            const members = membersByShop[shop.id] || [];
+            const formOpen = memberForm.shopId === shop.id;
+
+            return (
+              <div key={shop.id} className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => toggleShop(shop.id)}
+                  className="w-full p-4 flex justify-between items-center gap-3 text-left hover:bg-zinc-800/30 transition-colors"
+                >
+                  <div>
+                    <h3 className="font-semibold text-white">{shop.name}</h3>
+                    <p className="text-xs text-zinc-500 font-mono mt-0.5">{shop.slug}</p>
+                    {shop.tagline && <p className="text-xs text-zinc-400 mt-1">{shop.tagline}</p>}
+                  </div>
+                  {expanded ? <ChevronUp className="w-4 h-4 text-zinc-500 shrink-0" /> : <ChevronDown className="w-4 h-4 text-zinc-500 shrink-0" />}
+                </button>
+
+                {expanded && (
+                  <div className="px-4 pb-4 space-y-4 border-t border-zinc-800/80 pt-4">
+                    <div>
+                      <p className="text-[11px] font-semibold text-violet-400 mb-2">Link do painel admin (envie ao dono)</p>
+                      <FullLinkDisplay
+                        path={adminPath}
+                        description="O dono entra com o e-mail e senha cadastrados abaixo."
+                      />
+                      <Link
+                        to={adminPath}
+                        target="_blank"
+                        className="inline-flex items-center gap-1 mt-2 text-xs text-violet-400 hover:underline"
+                      >
+                        <ExternalLink className="w-3 h-3" /> Abrir painel admin
+                      </Link>
+                    </div>
+
+                    {members.length > 0 && (
+                      <div>
+                        <p className="text-[11px] font-semibold text-zinc-400 mb-2">Equipe cadastrada</p>
+                        <ul className="space-y-1">
+                          {members.map(m => (
+                            <li key={m.id} className="text-xs text-zinc-300 flex justify-between gap-2 py-1.5 px-2 bg-zinc-950 rounded-lg">
+                              <span>{m.name} — {m.email}</span>
+                              <span className="text-zinc-500 capitalize">{m.role}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    <form
+                      onSubmit={e => handleAddMember(e, shop.id)}
+                      className="p-3 bg-zinc-950/60 border border-zinc-800 rounded-xl space-y-2"
+                    >
+                      <h3 className="text-xs font-semibold text-amber-500 flex items-center gap-2">
+                        <Users className="w-3.5 h-3.5" /> Cadastrar dono / equipe
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <input
+                          placeholder="Nome completo"
+                          value={formOpen ? memberForm.name : ''}
+                          onFocus={() => setMemberForm(p => ({ ...emptyMemberForm, shopId: shop.id, email: p.shopId === shop.id ? p.email : '', name: p.shopId === shop.id ? p.name : '', password: p.shopId === shop.id ? p.password : '', role: p.shopId === shop.id ? p.role : 'owner' }))}
+                          onChange={e => setMemberForm(p => ({ ...p, shopId: shop.id, name: e.target.value }))}
+                          className="px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-sm text-white"
+                          required
+                        />
+                        <input
+                          type="email"
+                          placeholder="E-mail de login"
+                          value={formOpen ? memberForm.email : ''}
+                          onChange={e => setMemberForm(p => ({ ...p, shopId: shop.id, email: e.target.value }))}
+                          className="px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-sm text-white"
+                          required
+                        />
+                        <input
+                          type="password"
+                          placeholder="Senha inicial"
+                          value={formOpen ? memberForm.password : ''}
+                          onChange={e => setMemberForm(p => ({ ...p, shopId: shop.id, password: e.target.value }))}
+                          className="px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-sm text-white"
+                          required
+                        />
+                        <select
+                          value={formOpen ? memberForm.role : 'owner'}
+                          onChange={e => setMemberForm(p => ({ ...p, shopId: shop.id, role: e.target.value as typeof memberForm.role }))}
+                          className="px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-sm text-white"
+                        >
+                          <option value="owner">Dono</option>
+                          <option value="manager">Gerente</option>
+                          <option value="barber">Barbeiro</option>
+                        </select>
+                      </div>
+                      {memberSuccess && formOpen && <p className="text-xs text-emerald-400">{memberSuccess}</p>}
+                      {error && formOpen && <p className="text-xs text-red-400">{error}</p>}
+                      <button type="submit" className="px-4 py-2 bg-amber-600 text-white rounded-lg text-xs font-semibold">
+                        Criar acesso
+                      </button>
+                    </form>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

@@ -1,12 +1,19 @@
 import React from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { Scissors, Sparkles } from 'lucide-react';
-import { getShopBySlug } from '../shops';
 import { useBarbeariaStore } from '../hooks/useBarbeariaStore';
 import ChatAssistant from '../components/ChatAssistant';
 
 function AssistantView({ slug }: { slug: string }) {
   const store = useBarbeariaStore(slug);
+
+  if (store.shopNotFound && !store.loading) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 text-center">
+        <p className="text-zinc-400">Barbearia não encontrada.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
@@ -55,10 +62,9 @@ function AssistantView({ slug }: { slug: string }) {
 
 export default function AssistantPage() {
   const { slug } = useParams<{ slug: string }>();
-  const shop = getShopBySlug(slug);
 
-  if (!shop || !slug) {
-    return <Navigate to="/" replace />;
+  if (!slug) {
+    return <Navigate to="/saas" replace />;
   }
 
   return <AssistantView slug={slug} />;
